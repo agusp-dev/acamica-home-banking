@@ -2,6 +2,7 @@
 var nombreUsuario = "Erika Moreno";
 var saldoCuenta = 20000;
 var limiteExtraccion = 3000;
+var cuentasAmigas = new Map();
 
 const COD_AGUA = 1;
 const COD_LUZ = 2;
@@ -126,7 +127,42 @@ function pagarServicio() {
 }
 
 function transferirDinero() {
+    if (cuentasAmigas.size > 0) {
 
+        
+
+    } else {
+        mostrarMensajeListaCuentasAmigasVacia();
+    }
+}
+
+function agregarCuentaAmiga() {
+
+    var alertResultado = prompt("Por favor, ingrese el código de la cuenta:");
+    if (alertResultado == null) {
+        return;
+    }
+
+    var codigoCuenta = parseInt(alertResultado);
+    if (isNaN(codigoCuenta)) {
+        mostrarMensajeErrorCodigoCuenta();
+        return;
+    }
+
+    alertResultado = prompt("Por favor, ingrese el nombre y apellido del titular de la cuenta:");
+    if (alertResultado == null) {
+        return;
+    }
+
+    if (alertResultado.length == 0) {
+        mostrarMensajeErrorTitularCuenta();
+        return;
+    }
+
+    var nombreTitularCuenta = alertResultado;
+    
+    agregarCuentaAmigaAlaLista(codigoCuenta, nombreTitularCuenta);
+    mostrarMensajeCuentaAmigaAgregada();
 }
 
 function iniciarSesion() {
@@ -193,6 +229,14 @@ function obtenerNombreServicio(codigo) {
  */
 function obtenerPrecioServicio(codigo) {
     return SERVICIOS_MONTOS.get(codigo);
+}
+
+function agregarCuentaAmigaAlaLista(cuentaCodigo, cuentaNombre) {
+    cuentasAmigas.set(cuentaCodigo, cuentaNombre);
+}
+
+function obtenerNombreCuentaAmiga(cuentaCodigo) {
+    return cuentasAmigas.get(cuentaCodigo);
 }
 
 
@@ -293,12 +337,52 @@ function mostrarMensajeErrorPagoServicioSaldoSuperado(nombreServicio) {
     alert(msg);
 }
 
+/**
+ * Muestra un alert indicando que el servicio fue pagado correctamente.
+ * @param {String} nombreServicio 
+ * @param {Number} montoPagado 
+ * @param {Number} saldoAnterior 
+ */
 function mostrarMensajePagoServicioRealizado(nombreServicio, montoPagado, saldoAnterior) {
     var msg = "ÉXITO"
         .concat("\n\nHas pagado el servicio: " + nombreServicio)
         .concat("\nSaldo anterior: $" + saldoAnterior)
         .concat("\nDinero descontado: $" + montoPagado)
         .concat("\nSaldo actual: $" + saldoCuenta);
+    alert(msg);
+}
+
+/**
+ * Muestra un alert indicando que la lista de cuentas amigas esta vacia.
+ */
+function mostrarMensajeListaCuentasAmigasVacia() {
+    var msg = "ATENCIÓN"
+        .concat("\n\nNo dispone de cuentas amigas para registrar una transferencia.");
+    alert(msg);
+}
+
+/**
+ * Muestra un alert indicando que el codigo de cuenta ingresado, tiene formato incorrecto.
+ */
+function mostrarMensajeErrorCodigoCuenta() {
+    var msg = "ATENCIÓN"
+        .concat("\n\nEl código ingresado no tiene el formato correcto.");
+    alert(msg);
+}
+
+/**
+ * Muestra un alert indicando que el nombre y apellido del titular de la cuenta,
+ * tiene formato incorrecto. 
+ */
+function mostrarMensajeErrorTitularCuenta() {
+    var msg = "ATENCIÓN"
+        .concat("\n\nEl nombre y apellido ingresado no tiene el formato correcto.");
+    alert(msg);
+}
+
+function mostrarMensajeCuentaAmigaAgregada() {
+    var msg = "ÉXITO"
+        .concat("\n\nLa cuenta ha sido agregada correctamente.");
     alert(msg);
 }
 
