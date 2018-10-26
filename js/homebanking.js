@@ -3,20 +3,36 @@ var saldoCuenta = 20000;
 var limiteExtraccion = 3000;
 var cuentasAmigas = new Map();
 var ultMovimientos = [];
-
-//Datos de login
+var usuarioLogueado = false;
 var nombreUsuario = "Erika Moreno";
 const codigoCuenta = 1234;
-var usuarioLogueado = false;
-
 const SERVICIOS = [{codigo: 1, nombre: "Agua", monto: 350}, 
                    {codigo: 2, nombre: "Luz", monto: 425},
                    {codigo: 3, nombre: "Internet", monto: 210}, 
                    {codigo: 4, nombre: "Teléfono", monto: 570}];
 
-//Ejecución de las funciones que actualizan los valores de las variables en el HTML.
+//Ejecución de la funciones que actualizan los valores de las variables en el HTML.
 window.onload = function() {
     iniciarSesion();
+}
+
+function iniciarSesion() {
+    //verifica que no se cancele el prompt y que el codigo sea el correcto
+    var codigo = prompt("Por favor, ingrese su código de usuario:");
+    if (codigo != null && codigo == codigoCuenta) {
+        usuarioLogueado = true;
+        mostrarMensajeInicioSesionCorrecto();   
+    } else {
+        usuarioLogueado = false;
+        nombreUsuario = "";
+        saldoCuenta = 0;
+        limiteExtraccion = 0;
+        mostrarMensajeInicioSesionIncorrecto();
+    }
+
+    cargarNombreEnPantalla();
+    actualizarSaldoEnPantalla();
+    actualizarLimiteEnPantalla();
 }
 
 //Funciones que tenes que completar
@@ -68,6 +84,12 @@ function extraerDinero() {
         return;
     }
 
+    //verifica que el monto no sea negativo ni cero
+    if (cantExtraccion <= 0) {
+        mostrarMensajeErrorMontoCero();
+        return;
+    }
+
     //verifica que el monto no supere el limite de extraccion
     if (limiteExtraccionSuperado(cantExtraccion)) {
         mostrarMensajeLimiteExtraccionSuperado();
@@ -114,6 +136,12 @@ function depositarDinero() {
         return;
     }
 
+    //verifica que el monto no sea negativo ni cero
+    if (cantDeposito <= 0) {
+        mostrarMensajeErrorMontoCero();
+        return;
+    }
+
     var saldoAnterior = saldoCuenta;
     sumarDineroAlSaldo(cantDeposito);
     mostrarMensajeDepositoRealizado(cantDeposito, saldoAnterior);
@@ -141,6 +169,32 @@ function pagarServicio() {
 
     //verifica si el codigo ingresado pertenece a un servicio.
     var servicio = obtenerServicio(parseInt(codigoServicio));
+
+    /**
+     * ATENCION.
+     * 
+     * Se decide no utilizar switch ya que desde un principio tuve los servicios en un array y no como 
+     * datos hardcode separados. Me parecio mas performante y limpio.
+     * 
+     * De todas maneras, dejo comentado como hubiera utilizado el condicional multiple.
+     */
+    // switch (parseInt(codigoServicio)) {
+    //     case 1:
+    //         //TODO: pagarAgua();
+    //         break;
+    //     case 2:
+    //         //TODO: pagarLuz();
+    //         break;
+    //     case 3:
+    //         //TODO: pagarInternet();
+    //         break;
+    //     case 4:
+    //         //TODO: pagarTelefono();
+    //         break;
+    //     default:
+    //         //TODO: mostrarMensajeErrorServicioSeleccionado();
+    // }
+
     if (servicio == undefined) {
         mostrarMensajeServicioSeleccionadoIncorrecto(codigoServicio);
         return;
@@ -180,6 +234,12 @@ function transferirDinero() {
         var montoTransferencia = parseInt(alertResultado);
         if (isNaN(montoTransferencia)) {
             mostrarMensajeErrorMontoIngresado();
+            return;
+        }
+
+        //verifica que el monto no sea negativo ni cero
+        if (montoTransferencia <= 0) {
+            mostrarMensajeErrorMontoCero();
             return;
         }
 
@@ -230,7 +290,7 @@ function agregarCuentaAmiga() {
 
     //verifica que el codigo ingresado sea numerico
     var codigoCuenta = parseInt(alertResultado);
-    if (isNaN(codigoCuenta)) {
+    if (isNaN(codigoCuenta) || codigoCuenta <= 0) {
         mostrarMensajeErrorCodigoCuenta();
         return;
     }
@@ -242,7 +302,7 @@ function agregarCuentaAmiga() {
     }
 
     //verifica que se haya ingresado un nombre y apellido valido
-    if (nombreTitularCuenta.trim().length == 0) {
+    if (!isNaN(nombreTitularCuenta) || nombreTitularCuenta.trim().length == 0) {
         mostrarMensajeErrorTitularCuenta();
         return;
     }
@@ -266,25 +326,6 @@ function ultimosMovimientos() {
     } else {
         mostrarMensajeSinMovimientos();
     }
-}
-
-function iniciarSesion() {
-    //verifica que no se cancele el prompt y que el codigo sea el correcto
-    var codigo = prompt("Por favor, ingrese su código de usuario:");
-    if (codigo != null && codigo == codigoCuenta) {
-        usuarioLogueado = true;
-        mostrarMensajeInicioSesionCorrecto();   
-    } else {
-        usuarioLogueado = false;
-        nombreUsuario = "";
-        saldoCuenta = 0;
-        limiteExtraccion = 0;
-        mostrarMensajeInicioSesionIncorrecto();
-    }
-
-    cargarNombreEnPantalla();
-    actualizarSaldoEnPantalla();
-    actualizarLimiteEnPantalla();
 }
 
 //Funciones que actualizan el valor de las variables en el HTML
@@ -405,7 +446,6 @@ function obtenerListaDeUltimosMovimientosString() {
     return listaString;
 }
 
-
 //Validaciones
 /**
  * Verifica si el monto ingresado supera el saldo actual de la cuenta.
@@ -433,7 +473,6 @@ function entregaEnBilletesDeCien(monto) {
     }
     return false;
 }
-
 
 //Alertas - Exito
 /**
@@ -525,7 +564,6 @@ function mostrarMensajeInicioSesionCorrecto() {
         .concat("\n\nBienvenido/a " + nombreUsuario + ".\nYa puedes comenzar a realizar operaciones.");
     mostrarAlerta(msg);
 }
-
 
 //Alertas - Error
 /**
@@ -622,6 +660,16 @@ function mostrarMensajeErrorTitularCuenta() {
 }
 
 /**
+ * Muestra un alert indicando que el monto es igual o menos a cero.
+ */
+function mostrarMensajeErrorMontoCero() {
+    var msg = "ERROR"
+        .concat("\n\nEl monto debe ser mayor a cero (0).")
+        .concat("\nLa operación no pudo ser ejecutada.");
+    mostrarAlerta(msg);
+}
+
+/**
  * Muestra un alert indicando que el codigo ingresado no pertenece a ninguna cuenta asociada.
  */
 function mostrarMensajeErrorCuentaInexistente() {
@@ -655,6 +703,3 @@ function mostrarMensajeUsuarioNoLogueado() {
 function mostrarAlerta(mensaje) {
     alert(mensaje);
 }
-
-
-
