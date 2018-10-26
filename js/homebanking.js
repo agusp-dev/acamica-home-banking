@@ -4,24 +4,19 @@ var limiteExtraccion = 3000;
 var cuentasAmigas = new Map();
 var ultMovimientos = [];
 
+//Datos de login
 var nombreUsuario = "Erika Moreno";
 const codigoCuenta = 1234;
 var usuarioLogueado = false;
 
-const COD_AGUA = 1;
-const COD_LUZ = 2;
-const COD_INTERNET = 3;
-const COD_TELEFONO = 4;
-
-const SERVICIOS_NOMBRES = new Map([[COD_AGUA, "Agua"], [COD_LUZ, "Luz"], [COD_INTERNET, "Internet"], [COD_TELEFONO, "Teléfono"]]); 
-const SERVICIOS_MONTOS = new Map([[COD_AGUA, 350], [COD_LUZ, 425], [COD_INTERNET, 210], [COD_TELEFONO, 570]]);
+const SERVICIOS = [{codigo: 1, nombre: "Agua", monto: 350}, 
+                   {codigo: 2, nombre: "Luz", monto: 425},
+                   {codigo: 3, nombre: "Internet", monto: 210}, 
+                   {codigo: 4, nombre: "Teléfono", monto: 570}];
 
 //Ejecución de las funciones que actualizan los valores de las variables en el HTML.
 window.onload = function() {
     iniciarSesion();
-    cargarNombreEnPantalla();
-    actualizarSaldoEnPantalla();
-    actualizarLimiteEnPantalla();
 }
 
 //Funciones que tenes que completar
@@ -67,6 +62,7 @@ function extraerDinero() {
 
     //verifica que el monto sea numerico
     var cantExtraccion = parseInt(alertResultado);
+
     if (isNaN(cantExtraccion)) {
         mostrarMensajeErrorMontoIngresado();
         return;
@@ -143,25 +139,24 @@ function pagarServicio() {
         return;
     }
 
-    //verifica que el codigo ingresado sea valido  
-    var nombreServicio = obtenerNombreServicio(codigoServicio);
-    var precioServicio = obtenerPrecioServicio(codigoServicio);
-    if (nombreServicio == undefined || precioServicio == undefined) {
+    //verifica si el codigo ingresado pertenece a un servicio.
+    var servicio = obtenerServicio(parseInt(codigoServicio));
+    if (servicio == undefined) {
         mostrarMensajeServicioSeleccionadoIncorrecto(codigoServicio);
         return;
     }
 
     //verifica que el monto no supere el saldo de cuenta
-    if (saldoSuperado(precioServicio)) {
-        mostrarMensajeErrorPagoServicioSaldoSuperado(nombreServicio);
+    if (saldoSuperado(servicio.monto)) {
+        mostrarMensajeErrorPagoServicioSaldoSuperado(servicio.nombre);
         return;
     }
 
     var saldoAnterior = saldoCuenta;
-    restarDineroAlSaldo(precioServicio);
-    mostrarMensajePagoServicioRealizado(nombreServicio, precioServicio, saldoAnterior);
+    restarDineroAlSaldo(servicio.monto);
+    mostrarMensajePagoServicioRealizado(servicio.nombre, servicio.monto, saldoAnterior);
     actualizarSaldoEnPantalla();
-    agregarMovimiento("Servicio ($" + precioServicio + ")");
+    agregarMovimiento("Servicio ($" + servicio.monto + ")");
 }
 
 function transferirDinero() {
@@ -202,7 +197,7 @@ function transferirDinero() {
         }
 
         //verifica que el codigo ingresado pertenezca a una 'cuenta amiga' existente
-        var titularCuenta = obtenerNombreCuentaAmiga(codigoCuenta);
+        var titularCuenta = obtenerNombreCuentaAmiga(parseInt(codigoCuenta));
         if (titularCuenta == undefined) {
             mostrarMensajeErrorCuentaInexistente();
             return;
@@ -274,23 +269,22 @@ function ultimosMovimientos() {
 }
 
 function iniciarSesion() {
-    
-    //verifica que no se cancele el prompt
+    //verifica que no se cancele el prompt y que el codigo sea el correcto
     var codigo = prompt("Por favor, ingrese su código de usuario:");
-    if (codigo == null) {
-        return;
-    }
-
-    if (codigo == codigoCuenta) {
-        mostrarMensajeInicioSesionCorrecto();
+    if (codigo != null && codigo == codigoCuenta) {
         usuarioLogueado = true;
+        mostrarMensajeInicioSesionCorrecto();   
     } else {
-        mostrarMensajeInicioSesionIncorrecto();
         usuarioLogueado = false;
         nombreUsuario = "";
         saldoCuenta = 0;
         limiteExtraccion = 0;
+        mostrarMensajeInicioSesionIncorrecto();
     }
+
+    cargarNombreEnPantalla();
+    actualizarSaldoEnPantalla();
+    actualizarLimiteEnPantalla();
 }
 
 //Funciones que actualizan el valor de las variables en el HTML
@@ -328,8 +322,8 @@ function restarDineroAlSaldo(dinero) {
  */
 function obtenerListaDeServiciosString() {
     var listaString = "";
-    for (var servicio of SERVICIOS_NOMBRES.entries()) {
-        listaString += servicio[0] + " - " + servicio[1] + "\n";
+    for (var s of SERVICIOS) {
+        listaString += s.codigo + " - " + s.nombre + "\n";
     }
     return listaString;
 }
@@ -346,19 +340,19 @@ function obtenerListaDeCuentasAmigasString() {
 }
 
 /**
- * Obtiene nombre de servicio a partir del codigo.
- * @param {Number} codigo 
+ * Obtiene servicio pasando su codigo.
+ * @param {Number} codigoServicio 
  */
-function obtenerNombreServicio(codigo) {
-    return SERVICIOS_NOMBRES.get(codigo);
-}
+function obtenerServicio(codigoServicio) {
+    var servicio = undefined;
+    for (var s of SERVICIOS) {
+        if (s.codigo === codigoServicio) {
+            servicio = s;
+            break;
+        }
+    }
 
-/**
- * Obtiene precio de servicio a partir del codigo.
- * @param {Number} codigo 
- */
-function obtenerPrecioServicio(codigo) {
-    return SERVICIOS_MONTOS.get(codigo);
+    return servicio;
 }
 
 /**
@@ -452,7 +446,7 @@ function mostrarMensajeDepositoRealizado(deposito, saldoAnterior) {
         .concat("\n\nHas depositado: $" + deposito)
         .concat("\nSaldo anterior: $" + saldoAnterior)
         .concat("\nSaldo actual: $" + saldoCuenta);
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -465,14 +459,14 @@ function mostrarMensajeExtraccionRealizada(extraccion, saldoAnterior) {
         .concat("\n\nHas retirado: $" + extraccion)
         .concat("\nSaldo anterior: $" + saldoAnterior)
         .concat("\nSaldo actual: $" + saldoCuenta);
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 function mostrarMensajeLimiteExtraccionModificado() {
     var msg = "ÉXITO"
         .concat("\n\nSu límite de extracción a sido modificado")
         .concat("\nLímite actual: $" + limiteExtraccion);
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -487,7 +481,7 @@ function mostrarMensajePagoServicioRealizado(nombreServicio, montoPagado, saldoA
         .concat("\nSaldo anterior: $" + saldoAnterior)
         .concat("\nDinero descontado: $" + montoPagado)
         .concat("\nSaldo actual: $" + saldoCuenta);
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -496,7 +490,7 @@ function mostrarMensajePagoServicioRealizado(nombreServicio, montoPagado, saldoA
 function mostrarMensajeCuentaAmigaAgregada() {
     var msg = "ÉXITO"
         .concat("\n\nLa cuenta ha sido agregada correctamente.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -509,7 +503,7 @@ function mostrarMensajeTransferenciaRealizada(montoTransferido, cuentaDestino) {
         .concat("\n\nLa transferencia se ha realizado correctamente.")
         .concat("\n\nMonto transferido: $" + montoTransferido)
         .concat("\nCuenta destino: " + cuentaDestino);
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -520,7 +514,7 @@ function mostrarMensajeUltimosMovimientos(movimientos) {
     var msg = "ATENCIÓN"
         .concat("\n\nA continuación se listan los 5 últimos movimientos de su cuenta:")
         .concat("\n\n" + movimientos);
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -529,16 +523,11 @@ function mostrarMensajeUltimosMovimientos(movimientos) {
 function mostrarMensajeInicioSesionCorrecto() {
     var msg = "ÉXITO"
         .concat("\n\nBienvenido/a " + nombreUsuario + ".\nYa puedes comenzar a realizar operaciones.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 
-
-
-
-
 //Alertas - Error
-
 /**
  * Muestra un alert indicando que el monto ingresado es incorrecto.
  */
@@ -546,7 +535,7 @@ function mostrarMensajeErrorMontoIngresado() {
     var msg = "ERROR"
         .concat("\n\nEl monto ingresado no es correcto.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -556,7 +545,7 @@ function mostrarMensajeSaldoSuperado() {
     var msg = "ERROR"
         .concat("\n\nEl monto ingresado supera el saldo actual de su cuenta.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -566,7 +555,7 @@ function mostrarMensajeLimiteExtraccionSuperado() {
     var msg = "ERROR"
         .concat("\n\nEl monto ingresado supera su límite de extracción.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -576,7 +565,7 @@ function mostrarMensajeMontoNoPuedeEntregarseEnBilletesDeCien() {
     var msg = "ERROR"
         .concat("\n\nEl monto ingresado no puede extraerse en billetes de $100.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -587,7 +576,7 @@ function mostrarMensajeServicioSeleccionadoIncorrecto(codigo) {
     var msg = "ERROR"
         .concat("\n\nEl código ingresado (" + codigo + ") no pertenece a ningún servicio.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -598,7 +587,7 @@ function mostrarMensajeErrorPagoServicioSaldoSuperado(nombreServicio) {
     var msg = "ERROR"
         .concat("\n\nEl monto del servicio (" + nombreServicio + ") supera el saldo actual de su cuenta.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -608,7 +597,7 @@ function mostrarMensajeListaCuentasAmigasVacia() {
     var msg = "ERROR"
         .concat("\n\nNo dispone de cuentas amigas para registrar una transferencia.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -618,7 +607,7 @@ function mostrarMensajeErrorCodigoCuenta() {
     var msg = "ERROR"
         .concat("\n\nEl código ingresado no tiene el formato correcto.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -629,7 +618,7 @@ function mostrarMensajeErrorTitularCuenta() {
     var msg = "ERROR"
         .concat("\n\nEl nombre y apellido ingresado no tiene el formato correcto.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 /**
@@ -639,61 +628,33 @@ function mostrarMensajeErrorCuentaInexistente() {
     var msg = "ERROR"
         .concat("\n\nEl código ingresado no pertenece a ninguna cuenta amiga.")
         .concat("\nLa operación no pudo ser ejecutada.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 function mostrarMensajeInicioSesionIncorrecto() {
     var msg = "ERROR"
         .concat("\n\nEl código ingresado no pertenece a ningun usuario.")
         .concat("\nPara intentar nuevamente, por favor, refresque la página.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
-
 
 //Alertas - Neutrales
 function mostrarMensajeSinMovimientos() {
     var msg = "ATENCIÓN"
         .concat("\n\nSu cuenta aún no dispone de movimientos.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
 function mostrarMensajeUsuarioNoLogueado() {
     var msg = "ATENCIÓN"
         .concat("\n\nNo hay un usuario logueado.")
         .concat("\nPara iniciar sesión, por favor, refresque la página.");
-    alert(msg);
+    mostrarAlerta(msg);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+function mostrarAlerta(mensaje) {
+    alert(mensaje);
+}
 
 
 
